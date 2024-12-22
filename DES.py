@@ -56,7 +56,7 @@ class DES:
             event.scan_duration
             > self.MRImachines[event.patient_type].slot_duration_hours
         ):
-            print("time limit exeeded")
+            print(f"Overtime needed for {event}")
         self.amount_served += 1
 
     # main loop
