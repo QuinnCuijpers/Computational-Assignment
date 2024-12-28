@@ -1,7 +1,7 @@
 from enum import Enum
-from typing import List
+import numpy as np
+from typing import Generator, NoReturn, Set, Any
 from datetime import datetime, timedelta
-import heapq
 
 
 class MRItype(Enum):
@@ -12,63 +12,39 @@ class MRItype(Enum):
 # creates an MRI machine that keeps track of its own time slots
 class MRI:
     type: MRItype
-    time_slots: List[datetime]  # heapq to implement sorted list
+    booked_slots: Set[datetime]  # set of booked slots
     slot_duration_hours: float
 
     def __init__(
         self,
         type: MRItype,
-        start_date: datetime,
-        end_date: datetime,
         slot_duration_hours: float,
     ):
         self.type = type
         self.slot_duration_hours = slot_duration_hours
-        self.time_slots = self.generate_time_slots(start_date, end_date)
+        self.booked_slots = set()
 
-    def generate_time_slots(
-        self, start_date: datetime, end_date: datetime
-    ) -> List[datetime]:
+    def slot_generator(
+        self, current_date: datetime
+    ) -> Generator[datetime, Any, NoReturn]:
 
-        time_slots: List[datetime] = []
+        current_date = current_date.replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )  # Normalize to the first operating hour of the day
+        search_date: datetime = current_date + timedelta(
+            days=1
+        )  # Start with the next day
 
-        current_time = start_date.replace(hour=8)
+        while True:
+            search_date.replace(hour=0, minute=0, second=0)
+            for hour in np.arange(8, 17, self.slot_duration_hours):
+                potential_slot: datetime = search_date + timedelta(hours=float(hour))
+                # skip time slots starting after 5 pm
+                if potential_slot.hour >= 17:
+                    if potential_slot.minute > 0:
+                        continue
+                elif potential_slot not in self.booked_slots:
+                    yield potential_slot
 
-        while current_time < end_date:
-            while current_time.hour < 17:
-                # Add the current slot to the list
-                heapq.heappush(time_slots, current_time)
-
-                # Increment the current time by the slot duration
-                current_time += timedelta(hours=self.slot_duration_hours)
-            current_time = datetime(
-                current_time.year, current_time.month, current_time.day, 8, 0, 0
-            ) + timedelta(days=1)
-
-        return time_slots
-
-    def get_slot(self, current_date: datetime) -> datetime | None:
-        for slot in self.time_slots:
-            if slot.date() > current_date.date():
-                self.remove_slot(slot)
-                return slot
-        else:
-            return None
-
-    def remove_slot(self, slot: datetime):
-        # Book the slot by removing it from available slots
-        if slot in self.time_slots:
-            self.time_slots.remove(slot)
-            heapq.heapify(self.time_slots)  # Re-heapify after removal
-        else:
-            print("No such timeslot found")
-
-
-if __name__ == "__main__":
-    mri = MRI(MRItype(1), datetime(2023, 12, 1, 0), datetime(2023, 12, 30, 0), 2)
-
-    print(mri.time_slots[0:10])
-    slot = mri.get_slot(datetime(2023, 12, 13, 0))
-    print(slot)
-    slot = mri.get_slot(datetime(2023, 12, 13, 0))
-    print(slot)
+            # Move to the next day
+            search_date += timedelta(days=1)

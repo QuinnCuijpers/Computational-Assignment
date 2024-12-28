@@ -23,8 +23,6 @@ def read_records(path) -> FutureEventsList:
             patient_duration = float(duration)
             patient_type: PatientType = PatientType.from_string(patientType.strip('""'))
 
-            event = EventCall(
-                patient_date, patient_time, patient_duration, patient_type
-            )
+            event = EventCall(patient_date, patient_duration, patient_type)
             eventList.add_event(event)
     return eventList
