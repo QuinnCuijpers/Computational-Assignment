@@ -1,4 +1,5 @@
 from typing import Any, Generator, List, NoReturn
+from pathlib import Path
 from event import Event, EventCall, EventScan
 from utils import read_records
 from datetime import datetime
@@ -19,7 +20,7 @@ class DES:
     max_waiting_time: float
     total_overtime: float
 
-    def __init__(self, filePath, scan_times: List[float], merged: bool):
+    def __init__(self, filePath: Path, scan_times: List[float], merged: bool):
         self.scan_times = scan_times
         self.merged = merged
 

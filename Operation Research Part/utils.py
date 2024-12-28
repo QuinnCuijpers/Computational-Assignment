@@ -2,9 +2,10 @@ from datetime import datetime, timedelta
 from patientType import PatientType
 from futureEventsList import FutureEventsList
 from event import EventCall
+from pathlib import Path
 
 
-def read_records(path) -> FutureEventsList:
+def read_records(path: Path) -> FutureEventsList:
 
     eventList = FutureEventsList()
     with open(path, "r") as f:
