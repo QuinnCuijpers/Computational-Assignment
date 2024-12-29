@@ -143,10 +143,10 @@ python -m operations_research_part.main
 ```
 
 The simulation will output statistics including:
-- Average waiting times
-- Maximum waiting time
-- Number of patients served
-- Machine utilization rates
+- Average waiting time in operational hours
+- Last scheduled scan date and time
+- Maximum waiting time in operational hours
+- Total overtime used
 
 
 
