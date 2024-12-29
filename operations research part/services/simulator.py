@@ -74,7 +74,6 @@ class DES:
                 best_mri = mri
         return best_slot, best_mri
 
-    # take up mri for scan_duration?
     def handle_scan(self, event: EventScan) -> None:
         self.amount_served += 1
         end_time = (
