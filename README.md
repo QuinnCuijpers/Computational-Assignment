@@ -95,23 +95,7 @@ FutureEventsList --> Event
 
 ### Usage
 
-The simulation can be configured and run through `main.py`.
-
-```python
-from services.simulator import DES
-from pathlib import Path
-
-# Create and configure the Discrete Event Simulator
-sim = DES(
-    filePath=Path("scanrecords.csv"),  # Path to input data
-    scan_times=[0.8, 1.2],            # Scan durations [Type1, Type2]
-    merged=False,                      # Machine allocation strategy
-)
-
-# Run simulation and get statistics
-sim.run()
-sim.stats()
-```
+The simulation can be configured and run through `main.py` contained in the `operations research part` directory.
 
 #### Configuration Options
 
