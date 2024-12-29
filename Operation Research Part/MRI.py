@@ -5,8 +5,8 @@ from datetime import datetime, timedelta
 
 
 class MRItype(Enum):
-    type1 = 1
-    type2 = 2
+    TYPE_1 = 1
+    TYPE_2 = 2
 
 
 # creates an MRI machine that keeps track of its own time slots
