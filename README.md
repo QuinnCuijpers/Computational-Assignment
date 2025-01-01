@@ -14,6 +14,7 @@ class Event {
 +float scan_duration
 +PatientType patient_type
 +working_hours_till(Event)
++__lt__(Event)
 }
 class EventCall {
 inherits Event
@@ -38,6 +39,7 @@ class MRI {
 +slot_generator(datetime)
 +add_delay(datetime, float)
 +get_accumulated_delay(datetime)
++find_next_slot(datetime)
 }
 class FutureEventsList {
 -List~Event~ heap
@@ -46,16 +48,16 @@ class FutureEventsList {
 +peek_event()
 }
 class DES {
-+datetime date
++datetime current_date
 +List~float~ scan_times
 +bool merged
 +FutureEventsList future_list
-+dict~PatientType,MRI~ MRImachines
-+float total_delay
-+float max_delay
-+Dict~date,List~float~~ delays_by_date
++Dict~PatientType,MRI~ MRImachines
++Dict~datetime,List~float~~ delays_by_date
 +run()
 +stats()
++handle_scan(EventScan)
++handle_call(EventCall)
 }
 Event <|-- EventCall
 Event <|-- EventScan
