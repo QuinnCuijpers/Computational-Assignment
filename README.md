@@ -33,8 +33,11 @@ class MRItype {
 class MRI {
 +MRItype type
 +Set~datetime~ booked_slots
++Dict~datetime,float~ delays
 +float slot_duration_hours
 +slot_generator(datetime)
++add_delay(datetime, float)
++get_accumulated_delay(datetime)
 }
 class FutureEventsList {
 -List~Event~ heap
@@ -48,6 +51,9 @@ class DES {
 +bool merged
 +FutureEventsList future_list
 +dict~PatientType,MRI~ MRImachines
++float total_delay
++float max_delay
++Dict~date,List~float~~ delays_by_date
 +run()
 +stats()
 }
@@ -131,6 +137,10 @@ The simulation will output statistics including:
 - Last scheduled scan date and time
 - Maximum waiting time in operational hours
 - Total overtime used
+- Delay statistics:
+  - Average delay per customer
+  - Maximum delay observed
+  - Average delay per day
 
 
 

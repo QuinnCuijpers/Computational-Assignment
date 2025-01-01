@@ -13,7 +13,7 @@ def main() -> None:
     #          or are dedicated to specific types (False)
     sim = DES(
         filePath=Path("scanrecords.csv"),
-        scan_times=[0.8, 1.2],  # estimated based on max length
+        scan_times=[0.7, 0.9],  # estimated based on max length
         merged=False,
     )
 
