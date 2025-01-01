@@ -33,8 +33,8 @@ class MRItype {
 }
 class MRI {
 +MRItype type
-+Set<datetime> booked_slots
-+Dict<datetime,float> delays
++Set[datetime] booked_slots
++Dict[datetime,List[float]] delays
 +float slot_duration_hours
 +slot_generator(datetime)
 +add_delay(datetime, float)
@@ -42,18 +42,18 @@ class MRI {
 +find_next_slot(datetime)
 }
 class FutureEventsList {
--List<Event> heap
+-List[Event] heap
 +add_event(Event)
 +pop_event()
 +peek_event()
 }
 class DES {
 +datetime current_date
-+List<float> scan_times
++List[float] scan_times
 +bool merged
 +FutureEventsList future_list
-+Dict<PatientType,MRI> MRImachines
-+Dict<datetime, List<float>> delays_by_date
++Dict[PatientType,MRI] MRImachines
++Dict[datetime, List[float]] delays_by_date
 +run()
 +stats()
 +handle_scan(EventScan)
