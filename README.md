@@ -53,7 +53,7 @@ class DES {
 +bool merged
 +FutureEventsList future_list
 +Dict~PatientType,MRI~ MRImachines
-+Dict<datetime, List~float~> delays_by_date
++Dict~datetime, List~float~ delays_by_date
 +run()
 +stats()
 +handle_scan(EventScan)
