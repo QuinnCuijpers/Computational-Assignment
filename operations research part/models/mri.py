@@ -55,12 +55,16 @@ class MRI:
                     yield potential_slot
             search_date += timedelta(days=1)
 
-    def add_delay(self, slot: datetime, actual_duration: float) -> float:
-        # Calculate and store delay if actual duration exceeds slot duration
-        delay = max(0, actual_duration - self.slot_duration_hours)
+    def calculate_total_delay(self, slot: datetime, actual_duration: float) -> float:
+        # Calculate total delay including both current scan's delay and accumulated delays
+        current_delay = max(0, actual_duration - self.slot_duration_hours)
+        accumulated_delay = self.get_accumulated_delay(slot)
+        return current_delay + accumulated_delay
+
+    def store_delay(self, slot: datetime, delay: float) -> None:
+        # Store delay if it's greater than zero
         if delay > 0:
             self.delays[slot] = delay
-        return delay
 
     def get_accumulated_delay(self, slot: datetime) -> float:
         # Calculate accumulated delays affecting this slot

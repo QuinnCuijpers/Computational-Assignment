@@ -10,7 +10,7 @@ This project consists of two main parts:
 ```mermaid
 classDiagram
 class Event {
-+datetime date
++datetime start_date
 +float scan_duration
 +PatientType patient_type
 +working_hours_till(Event)
@@ -21,6 +21,9 @@ inherits Event
 }
 class EventScan {
 inherits Event
++datetime end_date
++add_delay(float)
++calculate_overtime()
 }
 class PatientType {
 +TYPE_1
@@ -34,12 +37,12 @@ class MRItype {
 class MRI {
 +MRItype type
 +Set[datetime] booked_slots
-+Dict[datetime,List[float]] delays
++Dict[datetime,float] delays
 +float slot_duration_hours
 +slot_generator(datetime)
-+add_delay(datetime, float)
++calculate_total_delay(datetime, float)
++store_delay(datetime, float)
 +get_accumulated_delay(datetime)
-+find_next_slot(datetime)
 }
 class FutureEventsList {
 -List[Event] heap
@@ -49,11 +52,12 @@ class FutureEventsList {
 }
 class DES {
 +datetime current_date
++datetime last_scheduled_date
 +List[float] scan_times
 +bool merged
 +FutureEventsList future_list
 +Dict[PatientType,MRI] MRImachines
-+Dict[datetime, List[float]] delays_by_date
++DefaultDict[date, List[float]] delays_by_date
 +run()
 +stats()
 +handle_scan(EventScan)
@@ -73,13 +77,13 @@ FutureEventsList --> Event
 #### Models
 - **Event** (`models/event.py`): Base class for simulation events
   - `EventCall`: Patient appointment request events
-  - `EventScan`: MRI scanning events
+  - `EventScan`: MRI scanning events with end time tracking and delay management
   - Handles working hours calculations and event ordering
 
 - **MRI** (`models/mri.py`): MRI machine management
   - `MRItype`: Enum for machine types
   - Handles slot scheduling and availability
-  - Manages booked time slots
+  - Manages delays and their accumulation throughout the day
 
 - **PatientType** (`models/patient.py`): Patient classification
   - Enum for different patient types
@@ -137,6 +141,7 @@ python -m operations_research_part.main
 The simulation will output statistics including:
 - Average waiting time in operational hours
 - Last scheduled scan date and time
+- Last finished scan date and time
 - Maximum waiting time in operational hours
 - Total overtime used
 - Delay statistics:
