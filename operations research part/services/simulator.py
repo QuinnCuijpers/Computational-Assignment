@@ -2,7 +2,7 @@ from typing import Any, Generator, List, NoReturn, Dict, DefaultDict
 from pathlib import Path
 from models.event import Event, EventCall, EventScan
 from utils.file_reader import read_records
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from services.event_list import FutureEventsList
 from models.mri import MRI, MRItype
 from models.patient import PatientType
@@ -24,6 +24,7 @@ class DES:
     max_delay: float
     delays_by_date: DefaultDict[date, List[float]]
     last_scheduled_date: datetime
+    max_overtime: float
 
     def __init__(self, filePath: Path, scan_times: List[float], merged: bool) -> None:
         if len(scan_times) != len(PatientType):
@@ -39,10 +40,10 @@ class DES:
         self.amount_served = 0
         self.max_waiting_time = 0.0
         self.total_overtime = 0.0
+        self.max_overtime = 0.0
 
         # delay statistics
         self.total_delay = 0.0
-        self.max_delay = 0.0
         self.delays_by_date: DefaultDict[date, List[float]] = defaultdict(list)
 
         self.last_scheduled_date: datetime = datetime.min
@@ -65,7 +66,7 @@ class DES:
             mri.booked_slots.add(slot)
 
         # Update last scheduled date when creating a new scan
-        self.last_scheduled_date = slot
+        self.last_scheduled_date = max(self.last_scheduled_date, slot)
 
         # Calculate waiting time and update statistics
         waiting_time = event.working_hours_till(
@@ -93,26 +94,38 @@ class DES:
     def handle_scan(self, event: EventScan) -> None:
         self.amount_served += 1
 
-        # Get MRI machine and calculate delay
+        # Get MRI machine and calculate delays
         mri = self.MRImachines[event.patient_type]
-        total_delay = mri.calculate_total_delay(event.start_date, event.scan_duration)
+        current_delay = max(
+            0, event.scan_duration - mri.slot_duration_hours
+        )  # New delay from this scan
+        accumulated_delay = mri.get_accumulated_delay(
+            event.start_date
+        )  # Previous delays
+        total_delay = current_delay + accumulated_delay
+
+        # Store the total delay for this time slot
         mri.store_delay(event.start_date, total_delay)
 
-        # Add delay to event and update its end time
-        event.add_delay(total_delay)
+        # Add total delay to event for end time calculation
+        event.add_delay(current_delay)
+
+        # Add scan time to MRI utilization tracking
+        mri.add_scan_time(event.scan_duration)
 
         # Update delay statistics
-        self.total_delay += total_delay
-        self.max_delay = max(self.max_delay, total_delay)
+        self.total_delay += current_delay
 
         # Track delays by date
-        self.delays_by_date[event.start_date.date()].append(total_delay)
+        self.delays_by_date[event.start_date.date()].append(current_delay)
 
         # Update current simulation time to end of scan
         self.current_date = event.end_date
 
-        # Calculate overtime using event method
-        self.total_overtime += event.calculate_overtime()
+        # Calculate and update overtime statistics
+        overtime = event.calculate_overtime()
+        self.total_overtime += overtime
+        self.max_overtime = max(self.max_overtime, overtime)
 
     # main loop
     def run(self) -> None:
@@ -128,30 +141,52 @@ class DES:
                     raise ValueError("Unhandled event")
 
     def stats(self) -> None:
+
+        # waiting time statistics
+        print(f"\nWaiting time statistics:")
         print(
             f"Average waiting time in operational hours: {self.total_waiting_time/self.amount_served}"
         )
+        print(f"Maximum waiting time in operational hours: {self.max_waiting_time}")
+
+        # last scan day
+        print(f"\nLast scan day:")
         print(
             f"Last day that a scan was scheduled: {self.last_scheduled_date.date()} at {self.last_scheduled_date.time()}"
         )
         print(
             f"Last day that a scan finished: {self.current_date.date()} at {self.current_date.time()}"
         )
-        print(f"Maximum waiting time in operational hours: {self.max_waiting_time}")
-        print(f"Total overtime used: {self.total_overtime}")
+
+        # Overtime statistics
+        print(f"\nOvertime Statistics:")
+        print(f"Total overtime used: {self.total_overtime:.2f} hours")
+        print(f"Maximum overtime in a day: {self.max_overtime:.2f} hours")
 
         # Delay statistics
         print(f"\nDelay Statistics:")
         print(
             f"Average delay per customer: {self.total_delay/self.amount_served:.2f} hours"
         )
-        print(f"Maximum delay: {self.max_delay:.2f} hours")
 
-        # Calculate average delay per day
-        daily_averages = {
-            date: sum(delays) / len(delays)
-            for date, delays in self.delays_by_date.items()
-        }
-        if daily_averages:
-            avg_daily_delay = sum(daily_averages.values()) / len(daily_averages)
-            print(f"Average delay per day: {avg_daily_delay:.2f} hours")
+        # Calculate average delay per day (modified)
+        total_days = len(self.delays_by_date)
+        if total_days > 0:
+            total_daily_delay = sum(
+                sum(delays) for delays in self.delays_by_date.values()
+            )
+            avg_daily_delay = total_daily_delay / total_days
+            print(f"Average total delay per day: {avg_daily_delay:.2f} hours")
+
+            # Also show average delay per scan for context
+            print(
+                f"Average delay per scan: {self.total_delay/self.amount_served:.2f} hours"
+            )
+
+        print(f"\nMRI Utilization:")
+        first_event = min(self.delays_by_date.keys())
+        for patient_type, mri in self.MRImachines.items():
+            utilization = mri.calculate_utilization(
+                self.current_date, datetime.combine(first_event, datetime.min.time())
+            )
+            print(f"MRI {patient_type.name}: {utilization:.1f}%")

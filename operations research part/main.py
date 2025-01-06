@@ -13,8 +13,8 @@ def main() -> None:
     #          or are dedicated to specific types (False)
     sim = DES(
         filePath=Path("scanrecords.csv"),
-        scan_times=[0.8, 1.2],  # estimated based on max length
-        merged=False,
+        scan_times=[0.58, 1.02],  # estimated based on 95th percentile
+        merged=True,
     )
 
     # Execute the simulation

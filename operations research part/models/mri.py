@@ -18,6 +18,7 @@ class MRI:
     booked_slots: Set[datetime]  # Keeps track of all booked time slots
     slot_duration_hours: float  # Duration of each scanning slot
     delays: Dict[datetime, float]  # Maps slot start times to delay durations
+    total_scan_time: float  # Track total time machine is used
 
     def __init__(
         self,
@@ -29,6 +30,7 @@ class MRI:
         self.slot_duration_hours = slot_duration_hours
         self.booked_slots: Set[datetime] = set()
         self.delays: Dict[datetime, float] = {}
+        self.total_scan_time: float = 0.0  # Track total time machine is used
 
     def slot_generator(
         self, current_date: datetime
@@ -46,20 +48,20 @@ class MRI:
             # Generate slots for each working hour of a day
             for hour in np.arange(8, 17, self.slot_duration_hours):
                 potential_slot = search_date + timedelta(hours=float(hour))
-                # Account for accumulated delays
-                delay = self.get_accumulated_delay(potential_slot)
-                adjusted_slot = potential_slot + timedelta(hours=delay)
 
-                # Only yield slots that are within working hours and not already booked
-                if adjusted_slot.hour < 17 and potential_slot not in self.booked_slots:
+                potential_slot_end = potential_slot + timedelta(
+                    hours=self.slot_duration_hours
+                )
+
+                if potential_slot_end.hour > 17 or (
+                    potential_slot_end.hour == 17 and potential_slot_end.minute > 0
+                ):
+                    continue
+
+                # Don't adjust the slot time with delays when checking availability
+                if potential_slot not in self.booked_slots:
                     yield potential_slot
             search_date += timedelta(days=1)
-
-    def calculate_total_delay(self, slot: datetime, actual_duration: float) -> float:
-        # Calculate total delay including both current scan's delay and accumulated delays
-        current_delay = max(0, actual_duration - self.slot_duration_hours)
-        accumulated_delay = self.get_accumulated_delay(slot)
-        return current_delay + accumulated_delay
 
     def store_delay(self, slot: datetime, delay: float) -> None:
         # Store delay if it's greater than zero
@@ -73,3 +75,19 @@ class MRI:
             if delay_slot < slot and delay_slot.date() == slot.date():
                 total_delay += delay_duration
         return total_delay
+
+    def add_scan_time(self, duration: float) -> None:
+        self.total_scan_time += duration
+
+    def calculate_utilization(self, end_date: datetime, start_date: datetime) -> float:
+        # Calculate total working hours between start and end date
+        total_days = (end_date.date() - start_date.date()).days + 1
+        working_hours_per_day = 9  # 8:00 to 17:00
+        total_working_hours = total_days * working_hours_per_day
+
+        # Return utilization percentage
+        return (
+            (self.total_scan_time / total_working_hours) * 100
+            if total_working_hours > 0
+            else 0
+        )
