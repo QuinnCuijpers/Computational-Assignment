@@ -4,7 +4,6 @@ This project consists of two main parts:
 1. Econometrics Part - Statistical analysis of patient data
 2. Operations Research Part - A discrete event simulator for MRI scheduling
 
-
 ## Operations Research Part Structure
 
 ```mermaid
@@ -39,10 +38,13 @@ class MRI {
 +Set[datetime] booked_slots
 +Dict[datetime,float] delays
 +float slot_duration_hours
++float total_scan_time
 +slot_generator(datetime)
 +calculate_total_delay(datetime, float)
 +store_delay(datetime, float)
 +get_accumulated_delay(datetime)
++add_scan_time(duration)
++calculate_utilization(end_date, start_date)
 }
 class FutureEventsList {
 -List[Event] heap
@@ -55,6 +57,11 @@ class DES {
 +datetime last_scheduled_date
 +List[float] scan_times
 +bool merged
++float total_waiting_time
++int amount_served
++float total_delay
++float total_overtime
++float max_overtime
 +FutureEventsList future_list
 +Dict[PatientType,MRI] MRImachines
 +DefaultDict[date, List[float]] delays_by_date
@@ -105,12 +112,14 @@ FutureEventsList --> Event
   - Creates initial event list
   - Validates input data
 
-### Usage
+### Simulation Parameters
 
-The simulation can be configured and run through `main.py` contained in the `operations research part` directory.
+#### Operating Hours
+- Working hours: 8:00 - 17:00
+- Weekdays only (Monday-Friday)
+- Overtime is tracked when scans extend beyond 17:00
 
 #### Configuration Options
-
 1. **Input File** (`filePath`): 
    - CSV file containing patient records
    - Format: `date,time,duration,patient_type`
@@ -129,7 +138,7 @@ The simulation can be configured and run through `main.py` contained in the `ope
    - `False`: Dedicated machines per patient type
    - Affects how patients are assigned to machines
 
-#### Running the Simulation
+### Running the Simulation
 
 1. Prepare your input CSV file
 2. Configure the simulation parameters
@@ -138,16 +147,42 @@ The simulation can be configured and run through `main.py` contained in the `ope
 python -m operations_research_part.main
 ```
 
-The simulation will output statistics including:
-- Average waiting time in operational hours
-- Last scheduled scan date and time
-- Last finished scan date and time
-- Maximum waiting time in operational hours
-- Total overtime used
-- Delay statistics:
-  - Average delay per customer
-  - Maximum delay observed
-  - Average delay per day
+### Output Statistics
+
+1. **Timing Statistics**
+   - Average waiting time in operational hours
+   - Maximum waiting time in operational hours
+   - Last scheduled scan date and time
+   - Last finished scan date and time
+
+2. **Efficiency Metrics**
+   - Total overtime used
+   - Maximum overtime in a day
+   - MRI utilization rates per machine type
+
+3. **Delay Analysis**
+   - Average delay per customer
+   - Average total delay per day
+   - Average delay per scan
+
+### Data Generation
+
+The project includes scripts for generating synthetic patient data:
+- `econometrics part/Statistical Analysis Type 1.ipynb`: Generates Type 1 patient data
+- `econometrics part/generate data type2.py`: Generates Type 2 patient data
+- `econometrics part/merge_generated.py`: Merges both patient types into a single dataset
+
+### Statistical Analysis
+
+The project includes statistical analysis of:
+- patient type 1
+  - (`econometrics part/Statistical Analysis Type 1.ipynb`)
+- patient type 2
+  - Inter-arrival times (`econometrics part/interarrivals7.py`)
+  - Scan durations (`econometrics part/ durations4.py`)
+- 
+
+These analyses inform the parameters used in data generation and simulation configuration.
 
 
 
